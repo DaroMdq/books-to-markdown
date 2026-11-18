@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# The one check: lint, format, tests. Green before committing.
+#
+#   bin/check                     ruff check, ruff format --check, full suite
+#   bin/check tests/test_pdf.py   same, but only that test file
+#
+# Uses the active virtualenv if there is one, otherwise ./.venv. Set it up with:
+#   python3 -m venv .venv && .venv/bin/pip install -e '.[dev]'
+set -uo pipefail
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO" || exit 1
+
+if [ -n "${VIRTUAL_ENV:-}" ] && [ -x "$VIRTUAL_ENV/bin/python" ]; then
+  PY="$VIRTUAL_ENV/bin/python"
+elif [ -x .venv/bin/python ]; then
+  PY=.venv/bin/python
+else
+  echo "no virtualenv: run  python3 -m venv .venv && .venv/bin/pip install -e '.[dev]'" >&2
+  exit 1
+fi
+
+# CPython validates cached bytecode by source mtime (whole seconds) and size, so
+# a same-size edit made within a second of the last run can be served stale.
+# Mutation testing produces exactly those edits. Purging is cheaper than doubt.
+find . -name __pycache__ -type d -prune -not -path './.venv/*' -exec rm -rf {} + 2>/dev/null
+
+"$PY" -m ruff check . && "$PY" -m ruff format --check . && "$PY" -m pytest -q "$@"

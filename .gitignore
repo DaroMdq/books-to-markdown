@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# Never commit real books or their converted output: books are copyrighted and
+# the Markdown is derived from them. The bundled sample is original text and is
+# the one exception.
+*.epub
+*.pdf
+out/
+!examples/field-guide.epub

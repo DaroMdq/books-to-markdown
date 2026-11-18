@@ -1,0 +1,83 @@
+[project]
+name = "h2m"
+version = "0.1.0"
+description = "Convert EPUB and PDF books to per-chapter Markdown for LLMs, and verify nothing was silently dropped."
+readme = "README.md"
+license = "AGPL-3.0-only"
+license-files = ["LICENSE"]
+authors = [{ name = "Dario Rocci" }]
+requires-python = ">=3.12"
+keywords = ["epub", "pdf", "markdown", "llm", "rag", "mathml", "latex", "document-conversion"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Text Processing :: Markup :: Markdown",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "pymupdf>=1.28",
+    "beautifulsoup4>=4.13",
+    "lxml>=5",
+]
+
+[project.optional-dependencies]
+# Downscales and palette-quantises figures extracted with --images.
+images = ["pillow>=10"]
+# Everything `bin/check` needs: pip install -e '.[dev]'
+dev = ["pytest>=8", "ruff==0.17.5", "pillow>=10"]
+
+[project.urls]
+Homepage = "https://github.com/DaroMdq/books-to-markdown"
+Repository = "https://github.com/DaroMdq/books-to-markdown"
+Issues = "https://github.com/DaroMdq/books-to-markdown/issues"
+
+[project.scripts]
+h2m = "h2m.cli:main"
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+# Converter output is checked byte-for-byte against the converter; ruff would
+# otherwise reformat the Python fenced inside it.
+extend-exclude = ["examples/output"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+# Each of these is off for a stated reason, not because it was noisy.
+ignore = [
+    "E501",    # long lines: the converters carry long explanatory comments and
+               # long regexes, and wrapping either makes them harder to read.
+    "E741",    # `l` for a Line: layout.py is geometry code where `l` beside
+               # x0/x1/y0/y1 reads better than a longer name would.
+    "UP031",   # %-formatting: used throughout, deliberately. The format strings
+               # here are column-aligned report lines where %-8s is the point.
+    "RUF001",  # ambiguous unicode: this project converts − × ′ — for a living.
+    "RUF005",  # list concatenation over unpacking: a style preference only.
+    "E731",    # assigned lambdas: four one-line local helpers, all clearer inline.
+    "SIM905",  # "a b c".split(): the word lists read better as prose than as
+               # twenty quoted items.
+    "B905",    # zip(strict=): the zips here are over lists built together.
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = [
+    # bs4 warns that an XHTML document is being read with its HTML parser. That
+    # is deliberate: it is the parser the converter's output was verified with,
+    # and switching would change that output. epub.py silences the warning at
+    # import; pytest re-arms it, so it is silenced here too.
+    "ignore::bs4.XMLParsedAsHTMLWarning",
+    # PyMuPDF's SWIG bindings trigger these on import under Python 3.12+. They
+    # are about the binding, not about this code.
+    "ignore:builtin type .* has no __module__ attribute:DeprecationWarning",
+]
