@@ -111,6 +111,10 @@ The suite runs on EPUBs and PDFs it builds itself in each publisher's *shape* (s
 | 1 | input could not be read: missing file, corrupt EPUB, not a PDF, or a `verify` directory with no `.md` files |
 | 2 | usage error: unknown command, bad or missing flag, or `--fix-ligatures` with no word list |
 
+## History
+
+This tool was developed in a private repository alongside the books it was tested on. The public repository starts from a single squashed commit of that work; development continues here.
+
 ## Licence
 
 Copyright (C) 2026 Dario Rocci. Licensed under the [GNU AGPL v3.0](LICENSE), because the PDF pipeline is built on PyMuPDF, which is itself AGPL-licensed.
