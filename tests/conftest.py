@@ -31,12 +31,19 @@ XHTML = """<?xml version="1.0" encoding="utf-8"?>
 
 
 def make_epub(
-    path, docs, title="A Book", author="A Writer", identifier="urn:isbn:9780000000000", labels=None
+    path,
+    docs,
+    title="A Book",
+    author="A Writer",
+    identifier="urn:isbn:9780000000000",
+    labels=None,
+    package=True,
 ):
     """Build an EPUB from [(filename, doc_title, body_html), ...].
 
     `labels` supplies NCX navLabels when they should differ from <title> —
-    the InDesign case, where <title> is a meaningless filename.
+    the InDesign case, where <title> is a meaningless filename. `package=False`
+    leaves out the .opf, which makes a zip that is not a book.
     """
     ids = ["d%d" % i for i in range(len(docs))]
     manifest = "\n".join(
@@ -67,7 +74,8 @@ def make_epub(
         # mimetype must be first and stored, per the OCF spec.
         z.writestr("mimetype", "application/epub+zip", zipfile.ZIP_STORED)
         z.writestr("META-INF/container.xml", CONTAINER)
-        z.writestr("OEBPS/content.opf", opf)
+        if package:
+            z.writestr("OEBPS/content.opf", opf)
         z.writestr("OEBPS/toc.ncx", ncx)
         for name, doc_title, body in docs:
             z.writestr("OEBPS/" + name, XHTML % (doc_title, body))

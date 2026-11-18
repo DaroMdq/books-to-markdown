@@ -130,7 +130,11 @@ class Epub:
     def __init__(self, path):
         self.z = zipfile.ZipFile(path)
         self.names = self.z.namelist()
-        self.opf = next(n for n in self.names if n.endswith(".opf"))
+        self.opf = next((n for n in self.names if n.endswith(".opf")), None)
+        if self.opf is None:
+            # A zip with no package file is not an EPUB; the CLI reports a
+            # corrupt archive in one line, so say it the same way.
+            raise zipfile.BadZipFile("%s has no .opf package file" % path)
         self.base = posixpath.dirname(self.opf)
         raw = self.z.read(self.opf).decode("utf8", "replace")
         self.opf_raw = raw

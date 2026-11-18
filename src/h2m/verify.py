@@ -249,7 +249,9 @@ def _epub_documents(path):
 
     z = zipfile.ZipFile(path)
     names = z.namelist()
-    opf = next(n for n in names if n.endswith(".opf"))
+    opf = next((n for n in names if n.endswith(".opf")), None)
+    if opf is None:
+        raise zipfile.BadZipFile("%s has no .opf package file" % path)
     raw = z.read(opf).decode("utf8", "replace")
     base = posixpath.dirname(opf)
     ids = dict(re.findall(r'<item\s[^>]*id="([^"]+)"[^>]*href="([^"]+)"', raw))

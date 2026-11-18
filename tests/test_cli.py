@@ -11,7 +11,7 @@ import os
 import subprocess
 import sys
 
-from conftest import make_pdf
+from conftest import make_epub, make_pdf
 
 from h2m.cli import main
 
@@ -68,6 +68,19 @@ def test_a_file_that_is_not_a_pdf_exits_one(tmp_path) -> None:
     r = h2m("pdf", str(bad), "-o", str(tmp_path / "out"))
     assert r.returncode == 1
     assert "cannot read input" in r.stderr
+
+
+ONE_DOC = [("c1.xhtml", "One", "<h1>Chapter One</h1><p>Some words of the chapter.</p>")]
+
+
+def test_an_epub_with_no_package_file_exits_one_for_both_commands(tmp_path) -> None:
+    # A zip that is not a book: the .opf, which lists the spine, is missing.
+    book = make_epub(tmp_path / "b.epub", ONE_DOC, package=False)
+    for args in (("epub", book, "-o", str(tmp_path / "out")), ("verify", book, SAMPLE_OUT)):
+        r = h2m(*args)
+        assert r.returncode == 1, r.stderr
+        assert "Traceback" not in r.stderr
+        assert r.stderr.count("\n") == 1 and ".opf" in r.stderr, r.stderr
 
 
 def test_an_unknown_command_is_a_usage_error(capsys) -> None:
