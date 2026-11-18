@@ -31,7 +31,7 @@ flowchart LR
 
 ## The data in between
 
-- **EPUB**: each spine document is parsed with BeautifulSoup after MathML has been cut out and converted (bs4 mangles the namespace). The renderer emits a list of `(kind, text)` blocks, with page markers, block equations, images and captions held as `\x01`-delimited placeholders until the end, so that whitespace cleanup cannot damage them. Code fences are parked behind placeholders during that cleanup, because indentation is meaning ([N17](DECISIONS.md)).
+- **EPUB**: each spine document is parsed with BeautifulSoup after MathML has been cut out and converted (bs4 mangles the namespace). The renderer emits a list of `(kind, text)` blocks, with page markers, block equations, images and captions held as placeholders delimited by `MARK` (`\x01`) until the end, so that whitespace cleanup cannot damage them. Code fences are parked behind placeholders during that cleanup, because indentation is meaning ([N17](DECISIONS.md)).
 - **PDF**: `layout.raw_lines` reads PyMuPDF's span dictionary into `Line` objects. `Profile` measures the document once; every threshold is relative to it rather than a constant ([N8](DECISIONS.md)). `page_lines` removes furniture and harvests the folio; `Doc.page_blocks` classifies what is left.
 - **Output**: one file per chapter, `NN_slug.md`, zero-padded so that plain sorting is reading order. The YAML front matter records provenance and a census (words, equations, tables, figures, code) so a missing category is visible without opening the file ([N2](DECISIONS.md)).
 - **Verification** never trusts the converter's own counts: it re-reads the source.

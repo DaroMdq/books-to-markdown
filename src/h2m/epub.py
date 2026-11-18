@@ -30,6 +30,15 @@ except ImportError:
 
 from h2m.mathml import mathml_to_latex
 
+# Sentinels, written as escapes because a raw control byte is invisible in an
+# editor and a diff. MARK delimits the placeholders the renderer holds until
+# the end (page markers, block equations, images, captions, parked code
+# fences) so that whitespace cleanup cannot damage them; BR stands for a <br/>
+# inside a heading until the heading text is joined. Neither is a legal
+# character in XHTML.
+MARK = "\x01"
+BR = "\x02"
+
 MATH_RE = re.compile(r"<math\b.*?</math>", re.S | re.I)
 # Some publishers ship a PNG of each equation and comment the MathML out beside it.
 # Unwrapping the comment turns a picture back into real LaTeX.
@@ -255,7 +264,7 @@ class Renderer:
         num = num.strip()
         if num:
             self.pages.append(num)
-            return "PAGE:%s" % num
+            return "%sPAGE:%s%s" % (MARK, num, MARK)
         return ""
 
     def math_ref(self, node):
@@ -264,7 +273,7 @@ class Renderer:
         if tex is None:
             return ""
         if block:
-            return "BMATH:%d" % idx
+            return "%sBMATH:%d%s" % (MARK, idx, MARK)
         return "$%s$" % tex
 
     def img(self, node):
@@ -277,7 +286,7 @@ class Renderer:
             if tex:
                 self.math.append((tex, True))
                 self.alt_tex += 1
-                return "\x01BMATH:%d\x01" % (len(self.math) - 1)
+                return "%sBMATH:%d%s" % (MARK, len(self.math) - 1, MARK)
         alt = norm_ws(alt_raw).strip()
         # Some EPUBs repeat the filename in alt when there is no real description.
         if re.fullmatch(r"[\w./-]+\.(jpe?g|png|gif|svg)", alt, re.I):
@@ -287,7 +296,7 @@ class Renderer:
         path = posixpath.normpath(posixpath.join(self.doc_dir, src)) if src else ""
         name = posixpath.basename(path)
         self.figures.append({"file": name, "alt": alt})
-        return "IMG:%s|%s" % (name, alt)
+        return "%sIMG:%s|%s%s" % (MARK, name, alt, MARK)
 
     # ---- block --------------------------------------------------------
     def block(self, node, out, depth=0):
@@ -470,17 +479,17 @@ class Renderer:
         parts = []
         for c in node.children:
             if isinstance(c, Tag) and c.name.lower() == "br":
-                parts.append("")
+                parts.append(BR)
                 continue
             s = self.inline(c)
             # Keep the marker out of the heading text, but hold on to it.
-            self.held_marks.extend(re.findall(r"\x01PAGE:[^\x01]*\x01", s))
-            s = re.sub(r"\x01PAGE:[^\x01]*\x01", "", s)
+            self.held_marks.extend(re.findall("%sPAGE:[^%s]*%s" % (MARK, MARK, MARK), s))
+            s = re.sub("%sPAGE:[^%s]*%s" % (MARK, MARK, MARK), "", s)
             # Concatenate rather than join: InDesign splits words across spans
             # ("Exe"+"cution"), and a joining space would break them apart.
             parts.append(s)
         txt = "".join(parts)
-        txt = txt.replace("  ", " — ").replace("", " — ")
+        txt = txt.replace(" %s " % BR, " — ").replace(BR, " — ")
         txt = re.sub(r"\s+", " ", txt).strip()
         txt = re.sub(r"^\s*—\s*|\s*—\s*$", "", txt)
         return txt
@@ -516,7 +525,7 @@ class Renderer:
             c = "".join(self.inline(x) for x in cap.children).strip()
             c = re.sub(r"\s+", " ", c)
             if c:
-                parts.append("CAP:%s" % c)
+                parts.append("%sCAP:%s%s" % (MARK, c, MARK))
         return "\n".join(parts)
 
     def table(self, node):
@@ -565,20 +574,20 @@ class Renderer:
         def page(m):
             return " <!-- page %s --> " % m.group(1) if keep_pages else ""
 
-        s = re.sub(r"PAGE:([^]*)", page, s)
+        s = re.sub("%sPAGE:([^%s]*)%s" % (MARK, MARK, MARK), page, s)
 
         def bmath(m):
             tex, _ = self.math[int(m.group(1))]
             return "\n\n$$\n%s\n$$\n\n" % tex if tex else ""
 
-        s = re.sub(r"BMATH:(\d+)", bmath, s)
+        s = re.sub(r"%sBMATH:(\d+)%s" % (MARK, MARK), bmath, s)
 
         def image(m):
             name, alt = m.group(1), m.group(2)
             return "\n\n![%s](%s/%s)\n" % (alt, self.media_prefix, name)
 
-        s = re.sub(r"IMG:([^|]*)\|([^]*)", image, s)
-        s = re.sub(r"CAP:([^]*)", lambda m: "*%s*" % m.group(1), s)
+        s = re.sub(r"%sIMG:([^|%s]*)\|([^%s]*)%s" % (MARK, MARK, MARK, MARK), image, s)
+        s = re.sub("%sCAP:([^%s]*)%s" % (MARK, MARK, MARK), lambda m: "*%s*" % m.group(1), s)
         return s
 
     def emit(self, blocks):
@@ -715,13 +724,13 @@ def convert_doc(book, path, media_prefix, code_lang=""):
 
     def _park(m):
         fences.append(m.group(0))
-        return "\x01FENCE:%d\x01" % (len(fences) - 1)
+        return "%sFENCE:%d%s" % (MARK, len(fences) - 1, MARK)
 
     md = re.sub(r"(?ms)^(```|~~~).*?^\1[ \t]*$", _park, md)
     md = re.sub(r"[ \t]+\n", "\n", md)
     md = re.sub(r"\n{3,}", "\n\n", md)
     md = re.sub(r" {2,}", " ", md)
-    md = re.sub(r"\x01FENCE:(\d+)\x01", lambda m: fences[int(m.group(1))], md)
+    md = re.sub(r"%sFENCE:(\d+)%s" % (MARK, MARK), lambda m: fences[int(m.group(1))], md)
     return md.strip(), r
 
 

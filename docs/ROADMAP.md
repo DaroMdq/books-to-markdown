@@ -69,6 +69,7 @@ What each row breaks, and the test that must go red. Run a row by making the cha
 | 48 | `layout`: lockstep compares values, not their steps | `test_a_number_that_increases_but_does_not_track_the_page_is_not_a_folio` |
 | 49 | `epub`: a display equation at block level falls through to the container branch | `test_a_display_equation_set_directly_in_the_body_is_kept` (+1) |
 | 50 | `verify`: character references are not unescaped | `test_a_character_reference_in_the_source_is_read_as_its_character` |
+| 51 | `epub`: `MARK` written as the raw byte instead of `"\x01"` | `test_no_source_file_contains_a_raw_control_character` |
 
 **Eight rows came back NOT CAUGHT the first time: 14, 21, 22, 31, 32, 33, 41 and 47.** Every one looked like coverage until it was run:
 
