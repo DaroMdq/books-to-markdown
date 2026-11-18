@@ -13,7 +13,6 @@ import argparse
 import os
 import re
 import sys
-import unicodedata
 
 import pymupdf
 
@@ -31,19 +30,7 @@ from h2m.layout import (
     merge_dropcap,
     page_lines,
 )
-
-
-def slugify(s, maxlen=60):
-    s = unicodedata.normalize("NFKD", s or "")
-    s = s.encode("ascii", "ignore").decode()
-    s = re.sub(r"[^\w\s-]", "", s).strip().lower()
-    s = re.sub(r"[\s_-]+", "-", s)
-    return s[:maxlen].strip("-") or "untitled"
-
-
-def yaml_str(v):
-    v = str(v).replace("\\", "\\\\").replace('"', '\\"')
-    return '"%s"' % re.sub(r"\s+", " ", v).strip()
+from h2m.output import slugify, yaml_str
 
 
 class Doc:

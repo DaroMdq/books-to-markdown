@@ -15,7 +15,6 @@ import html
 import os
 import posixpath
 import re
-import unicodedata
 import warnings
 import zipfile
 
@@ -29,6 +28,7 @@ except ImportError:
     pass
 
 from h2m.mathml import mathml_to_latex
+from h2m.output import slugify, yaml_str
 
 # Sentinels, written as escapes because a raw control byte is invisible in an
 # editor and a diff. MARK delimits the placeholders the renderer holds until
@@ -120,20 +120,6 @@ def raw_text(node):
 
 
 # --------------------------------------------------------------------- utils
-def slugify(s, maxlen=60):
-    s = unicodedata.normalize("NFKD", s or "")
-    s = s.encode("ascii", "ignore").decode()
-    s = re.sub(r"[^\w\s-]", "", s).strip().lower()
-    s = re.sub(r"[\s_-]+", "-", s)
-    return s[:maxlen].strip("-") or "untitled"
-
-
-def yaml_str(v):
-    v = str(v).replace("\\", "\\\\").replace('"', '\\"')
-    v = re.sub(r"\s+", " ", v).strip()
-    return '"%s"' % v
-
-
 def norm_ws(s):
     s = s.replace(" ", " ").replace(" ", " ").replace(" ", " ")
     return re.sub(r"[ \t\r\f\v]+", " ", s)
